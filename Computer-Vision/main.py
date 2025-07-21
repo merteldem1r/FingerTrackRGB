@@ -2,10 +2,7 @@ import config
 import utils.frame_util as FrameUtil
 import sys
 import cv2
-import numpy as np
-import mediapipe as mp
-import time
-# from custom class
+
 from hand_tracking.hand_tracker import RealTimeHandTracker
 import hand_tracking.utils as HandTrackerUtil
 import utils.coordinates as CoordinatesUtil
@@ -38,9 +35,9 @@ fps_text_points = config.FPS_START_POINTS
 index_finger_points = (0, 0)
 RGB_Values = [0, 0, 0]
 last_box_finger_points = [
-    (0, 0),  # RED box
-    (0, 0),  # GREEN box
-    (0, 0),  # BLUE
+    (0, 0),  # in RED box
+    (0, 0),  # in GREEN box
+    (0, 0),  # in BLUE
 ]
 
 out_start_tick = cv2.getTickCount()
@@ -67,19 +64,16 @@ while True:
     finger_box_coordinates = CoordinatesUtil.getFingerInBoxRgbCoordinates(
         index_finger_points, rgb_box_points)
 
-    # change RGB and box values if finger in BOX
+    # change RGB and box values if finger in RGB box
     if finger_box_coordinates[0] != 3:
         if finger_box_coordinates[0] == 0:
             # finger FOUND in RED BOX
-            print("RED box")
             last_box_finger_points[0] = finger_box_coordinates[1]
         elif finger_box_coordinates[0] == 1:
             # finger FOUND in GREEN BOX
-            print("GREEN box")
             last_box_finger_points[1] = finger_box_coordinates[1]
         elif finger_box_coordinates[0] == 2:
             # finger FOUND in BLUE BOX
-            print("BLUE box")
             last_box_finger_points[2] = finger_box_coordinates[1]
 
         RGB_Values = CoordinatesUtil.getValueRGB(

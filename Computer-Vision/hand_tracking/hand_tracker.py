@@ -1,6 +1,5 @@
 import mediapipe as mp
 import time
-import numpy as np
 import cv2
 from mediapipe.tasks import python
 from mediapipe.tasks.python.vision.hand_landmarker import (
@@ -8,7 +7,6 @@ from mediapipe.tasks.python.vision.hand_landmarker import (
     HandLandmarkerOptions,
     HandLandmarkerResult
 )
-from mediapipe.framework.formats import landmark_pb2
 import config
 
 

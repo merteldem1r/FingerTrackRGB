@@ -2,7 +2,6 @@ import numpy as np
 import mediapipe as mp
 from mediapipe.tasks.python.vision.hand_landmarker import HandLandmarkerResult
 from mediapipe.framework.formats import landmark_pb2
-import config
 
 MARGIN = 10  # pixels
 FONT_SIZE = 1
