@@ -34,6 +34,7 @@ class RealTimeHandTracker():
             base_options=python.BaseOptions(
                 model_asset_path=config.MODEL_PATH),
             running_mode=mp.tasks.vision.RunningMode.LIVE_STREAM,
+            num_hands=2,
             result_callback=set_result)
 
         self.landmarker = HandLandmarker.create_from_options(options)
@@ -47,6 +48,7 @@ class RealTimeHandTracker():
 
     # get index finger points
     def get_index_finger_points(self):
+        res = [(0, 0), (0, 0)]
         try:
             hand_landmarks_list = self.result.hand_landmarks
 
@@ -59,9 +61,11 @@ class RealTimeHandTracker():
                 x = int(index_finger_normalized_x * config.CAMERA_WIDTH)
                 y = int(index_finger_normalized_y * config.CAMERA_HEIGHT)
 
-                return (x, y)
+                res[idx] = (x, y)
+
+            return res
         except:
-            return (0, 0)
+            return res
 
     def destroy(self):
         # destroy landmarker

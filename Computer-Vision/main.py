@@ -30,9 +30,6 @@ hand_tracker.initialize_tracker()
 fps_text = f"FPS: {hand_tracker.fps}"
 fps_text_points = config.FPS_START_POINTS
 
-
-# RGB and Finger points
-index_finger_points = (0, 0)
 RGB_Values = [0, 0, 0]
 last_box_finger_points = [
     (0, 0),  # in RED box
@@ -50,39 +47,45 @@ while True:
         break
 
     # get handmark result and draw landmark
+    hand_tracker.last_tick_count = cv2.getTickCount()
+
     hand_tracker.set_hand_marker_result(frame)
     frame = HandTrackerUtil.drawLandmarksOnImage(
         rgb_image=frame, detection_result=hand_tracker.result)
 
     # update index finger points
-    finger_points_res = hand_tracker.get_index_finger_points()
-    if finger_points_res != None:
-        index_finger_points = finger_points_res
+    hands_finger_point_res = hand_tracker.get_index_finger_points()
 
-    # RGB boxes
-    rgb_box_points = FrameUtil.drawBoxesRGB(frame, RGB_Values)
-    finger_box_coordinates = CoordinatesUtil.getFingerInBoxRgbCoordinates(
-        index_finger_points, rgb_box_points)
+    # for each HAND
+    for i in range(len(hands_finger_point_res)):
+        hand_finger_points = hands_finger_point_res[i]
 
-    # change RGB and box values if finger in RGB box
-    if finger_box_coordinates[0] != 3:
-        if finger_box_coordinates[0] == 0:
-            # finger FOUND in RED BOX
-            last_box_finger_points[0] = finger_box_coordinates[1]
-        elif finger_box_coordinates[0] == 1:
-            # finger FOUND in GREEN BOX
-            last_box_finger_points[1] = finger_box_coordinates[1]
-        elif finger_box_coordinates[0] == 2:
-            # finger FOUND in BLUE BOX
-            last_box_finger_points[2] = finger_box_coordinates[1]
+        # RGB boxes
+        rgb_box_points = FrameUtil.drawBoxesRGB(frame, RGB_Values)
+        finger_box_coordinates = CoordinatesUtil.getFingerInBoxRgbCoordinates(
+            hand_finger_points, rgb_box_points)
 
-        RGB_Values = CoordinatesUtil.getValueRGB(
-            last_box_finger_points, rgb_box_points)
+        print("Finger In box Coordinate: ", finger_box_coordinates)
 
-    print(RGB_Values)
+        # change RGB and box values if finger in RGB box
+        if finger_box_coordinates[0] != 3:
+            if finger_box_coordinates[0] == 0:
+                # finger FOUND in RED BOX
+                last_box_finger_points[0] = finger_box_coordinates[1]
+            elif finger_box_coordinates[0] == 1:
+                # finger FOUND in GREEN BOX
+                last_box_finger_points[1] = finger_box_coordinates[1]
+            elif finger_box_coordinates[0] == 2:
+                # finger FOUND in BLUE BOX
+                last_box_finger_points[2] = finger_box_coordinates[1]
 
-    FrameUtil.fillBoxesWithFingerRGB(
-        frame, rgb_box_points, last_box_finger_points)
+            RGB_Values = CoordinatesUtil.getValueRGB(
+                last_box_finger_points, rgb_box_points)
+
+        print("RGB Value: ", RGB_Values)
+
+        FrameUtil.fillBoxesWithFingerRGB(
+            frame, rgb_box_points, last_box_finger_points, RGB_Values)
 
     print(last_box_finger_points)
 
@@ -95,6 +98,20 @@ while True:
     FrameUtil.drawTextBox(frame, fps_text, fps_text_points, 1.5, 2, [0, 0, 0])
     FrameUtil.drawText(frame, fps_text, fps_text_points,
                        [255, 255, 255], 1.5, 2)
+
+    # esc display
+    FrameUtil.drawTextBox(frame, "Prss ESC to close",
+                          config.PRESS_ESC_POINTS_START_POINTS, 1, 2, [0, 0, 0])
+    FrameUtil.drawText(frame, "Prss ESC to close", config.PRESS_ESC_POINTS_START_POINTS,
+                       [255, 255, 255], 1, 2)
+
+    # current rgb
+    FrameUtil.drawTextBox(
+        frame, "Color: ", config.CURRENT_RGB_COLOR_TEXT, 1.5, 2, [0, 0, 0])
+    FrameUtil.drawText(frame, "Color:", config.CURRENT_RGB_COLOR_TEXT,
+                       [255, 255, 255], 1.5, 2)
+    cv2.rectangle(frame, config.CURRENT_RGB_COLOR_BOX_START,
+                  (config.CURRENT_RGB_COLOR_BOX_START[0] + 100, config.CURRENT_RGB_COLOR_BOX_START[1] + 70), [RGB_Values[2], RGB_Values[1], RGB_Values[0]], cv2.FILLED)
 
     key = cv2.waitKey(1)
     if key == 27:
