@@ -24,6 +24,7 @@
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include <string.h>
+#include "i2c-lcd.h"
 
 /* USER CODE END Includes */
 
@@ -76,6 +77,8 @@ uint8_t rxByte;
 uint8_t rxBuffer[16];
 uint8_t rxIndex = 0;
 
+uint8_t isReset = 0;
+
 void setLedPWM(uint8_t r, uint8_t g, uint8_t b) {
 	if (r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255) {
 		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, r);
@@ -88,7 +91,36 @@ void resetLedPWM() {
 	__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 0);
 	__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 0);
 	__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, 0);
+
+	setDefaultTextLCD();
 }
+
+void setDefaultTextLCD() {
+	lcd_clear();
+	lcd_put_cur(0, 0);
+	lcd_send_string("RGB: 255 255 255");
+	lcd_put_cur(1, 0);
+}
+
+void setRgbTextLCD(char* rgbMsg, uint8_t r, uint8_t g, uint8_t b) {
+	char msgBuffer[16];
+	sprintf(msgBuffer, "RGB: %s", rgbMsg);
+
+	lcd_clear();
+	lcd_put_cur(0, 0);
+	lcd_send_string(rgbMsg);
+
+	char hexRgbStr[16];
+	lcd_put_cur(1, 0);
+	snprintf(hexRgbStr, sizeof(hexRgbStr), "%02X %02X %02X", r, g, b);
+	lcd_send_string(hexRgbStr);
+}
+
+void resetBeep() {
+	isReset = 1;
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_SET);
+}
+
 
 // Serial messages & responses
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
@@ -105,15 +137,19 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 			if (code == 'S') {
 				unsigned int r_i, g_i, b_i;
 
-				if (sscanf((char*) &rxBuffer[2], "%u %u %u", &r_i, &g_i, &b_i) == 3) {
+				char *msgRgb  = (char*) &rxBuffer[2];
+
+				if (sscanf(msgRgb, "%u %u %u", &r_i, &g_i, &b_i) == 3) {
 					uint8_t r = (uint8_t) r_i;
 					uint8_t g = (uint8_t) g_i;
 					uint8_t b = (uint8_t) b_i;
 					setLedPWM(r, g, b);
+					setRgbTextLCD(msgRgb);
 				}
 
 			} else if (code == 'R') {
 				resetLedPWM();
+				resetBeep();
 			}
 
 			memset(rxBuffer, 0, 16);
@@ -167,6 +203,10 @@ int main(void) {
 
 	HAL_UART_Receive_IT(&huart2, rxBuffer, 1);
 
+	lcd_init();
+
+	setDefaultTextLCD();
+
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
@@ -175,6 +215,12 @@ int main(void) {
 
 		/* USER CODE END WHILE */
 		MX_USB_HOST_Process();
+
+		if (isReset == 1) {
+			HAL_Delay(150);
+			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_RESET);
+			isReset = 0;
+		}
 
 		/* USER CODE BEGIN 3 */
 	}

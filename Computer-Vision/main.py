@@ -1,12 +1,11 @@
+import utils.coordinates as CoordinatesUtil
+from hand_tracking.hand_tracker import RealTimeHandTracker
+from serial_com.serial import SerialComm
 import config
 import utils.frame_util as FrameUtil
 import sys
-import threading
 import cv2
 
-from serial_com.serial import SerialComm
-from hand_tracking.hand_tracker import RealTimeHandTracker
-import utils.coordinates as CoordinatesUtil
 
 # Serial (UART) communication
 # ser = SerialComm()
@@ -88,10 +87,6 @@ while True:
             RGB_Values = CoordinatesUtil.getValueRGB(
                 last_box_finger_points, rgb_box_points)
 
-            # ser.set_rgb(RGB_Values)
-            print("Finger In box Coordinate: ", finger_box_coordinates)
-            print("RGB Value: ", RGB_Values)
-
         # for RGB reset button
         FrameUtil.fillBoxesWithFingerRGB(
             frame, rgb_box_points, last_box_finger_points, RGB_Values)
@@ -103,7 +98,8 @@ while True:
                 (0, 0),  # in GREEN box
                 (0, 0),  # in BLUE
             ]
-            print("Reset RGB Triggered")
+            reset_points = FrameUtil.drawResetButtonRGB(
+                frame, is_triggered=True)
 
     # update fps every 200 ms
     if ((cv2.getTickCount() - out_start_tick) / cv2.getTickFrequency() >= 0.2):

@@ -84,6 +84,7 @@ class RealTimeHandTracker():
         with self.result_lock:
             if not self.result or not self.result.hand_landmarks:
                 return rgb_image
+
             hand_landmarks_list = self.result.hand_landmarks
             handedness_list = self.result.handedness
 
