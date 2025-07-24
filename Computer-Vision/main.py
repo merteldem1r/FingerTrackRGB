@@ -3,9 +3,14 @@ import utils.frame_util as FrameUtil
 import sys
 import cv2
 
+from serial_com.serial import SerialComm
 from hand_tracking.hand_tracker import RealTimeHandTracker
 import hand_tracking.utils as HandTrackerUtil
 import utils.coordinates as CoordinatesUtil
+
+# Serial (UART) communication
+ser = SerialComm()
+print("Serial PORT:", ser.getSerialPort())
 
 # Video settings
 source = cv2.VideoCapture(0)
@@ -65,8 +70,6 @@ while True:
         finger_box_coordinates = CoordinatesUtil.getFingerInBoxRgbCoordinates(
             hand_finger_points, rgb_box_points)
 
-        print("Finger In box Coordinate: ", finger_box_coordinates)
-
         # change RGB and box values if finger in RGB box
         if finger_box_coordinates[0] != 3:
             if finger_box_coordinates[0] == 0:
@@ -82,12 +85,12 @@ while True:
             RGB_Values = CoordinatesUtil.getValueRGB(
                 last_box_finger_points, rgb_box_points)
 
-        print("RGB Value: ", RGB_Values)
+            ser.set_rgb(RGB_Values)
+            print("Finger In box Coordinate: ", finger_box_coordinates)
+            print("RGB Value: ", RGB_Values)
 
         FrameUtil.fillBoxesWithFingerRGB(
             frame, rgb_box_points, last_box_finger_points, RGB_Values)
-
-    print(last_box_finger_points)
 
     # update fps every 200 ms
     if ((cv2.getTickCount() - out_start_tick) / cv2.getTickFrequency() >= 0.2):
@@ -121,6 +124,7 @@ while True:
     cv2.imshow(win_name, frame)
 
 
+ser.close()
 hand_tracker.destroy()
 source.release()
 cv2.destroyAllWindows()

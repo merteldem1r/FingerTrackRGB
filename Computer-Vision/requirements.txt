@@ -19,6 +19,7 @@ pillow==11.3.0
 protobuf==4.25.8
 pycparser==2.22
 pyparsing==3.2.3
+pyserial==3.5
 python-dateutil==2.9.0.post0
 scipy==1.15.3
 sentencepiece==0.2.0

@@ -1,5 +1,9 @@
 import os
 
+SERIAL_PORT = "/dev/tty.usbserial-B0044FJ3"
+BAUD_RATE = 115200
+
+# Video settings
 CAMERA_WIDTH = 1280
 CAMERA_HEIGHT = 720
 
