@@ -1,16 +1,16 @@
 import config
 import utils.frame_util as FrameUtil
 import sys
+import threading
 import cv2
 
 from serial_com.serial import SerialComm
 from hand_tracking.hand_tracker import RealTimeHandTracker
-import hand_tracking.utils as HandTrackerUtil
 import utils.coordinates as CoordinatesUtil
 
 # Serial (UART) communication
-ser = SerialComm()
-print("Serial PORT:", ser.getSerialPort())
+# ser = SerialComm()
+# print("Serial PORT:", ser.getSerialPort())
 
 # Video settings
 source = cv2.VideoCapture(0)
@@ -31,6 +31,7 @@ cv2.namedWindow(win_name)
 # Hand Tracker initialization
 hand_tracker = RealTimeHandTracker()
 hand_tracker.initialize_tracker()
+hand_finger_points = (0, 0)
 
 fps_text = f"FPS: {hand_tracker.fps}"
 fps_text_points = config.FPS_START_POINTS
@@ -55,11 +56,13 @@ while True:
     hand_tracker.last_tick_count = cv2.getTickCount()
 
     hand_tracker.set_hand_marker_result(frame)
-    frame = HandTrackerUtil.drawLandmarksOnImage(
-        rgb_image=frame, detection_result=hand_tracker.result)
+
+    # rgb reset button
+    reset_points = FrameUtil.drawResetButtonRGB(frame, is_triggered=False)
 
     # update index finger points
     hands_finger_point_res = hand_tracker.get_index_finger_points()
+    frame = hand_tracker.draw_landmarks_on_image(frame)
 
     # for each HAND
     for i in range(len(hands_finger_point_res)):
@@ -85,12 +88,22 @@ while True:
             RGB_Values = CoordinatesUtil.getValueRGB(
                 last_box_finger_points, rgb_box_points)
 
-            ser.set_rgb(RGB_Values)
+            # ser.set_rgb(RGB_Values)
             print("Finger In box Coordinate: ", finger_box_coordinates)
             print("RGB Value: ", RGB_Values)
 
+        # for RGB reset button
         FrameUtil.fillBoxesWithFingerRGB(
             frame, rgb_box_points, last_box_finger_points, RGB_Values)
+
+        if CoordinatesUtil.isFingerResetButton(hand_finger_points, reset_points):
+            RGB_Values = [0, 0, 0]
+            last_box_finger_points = [
+                (0, 0),  # in RED box
+                (0, 0),  # in GREEN box
+                (0, 0),  # in BLUE
+            ]
+            print("Reset RGB Triggered")
 
     # update fps every 200 ms
     if ((cv2.getTickCount() - out_start_tick) / cv2.getTickFrequency() >= 0.2):
@@ -124,7 +137,7 @@ while True:
     cv2.imshow(win_name, frame)
 
 
-ser.close()
+# ser.close()
 hand_tracker.destroy()
 source.release()
 cv2.destroyAllWindows()

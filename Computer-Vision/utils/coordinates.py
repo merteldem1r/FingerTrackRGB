@@ -45,3 +45,12 @@ def getValueRGB(finger_points, rgb_box_points):
         blue_value = int(blue_filled_height / config.RGB_BOX_HEIGHT * 255)
 
     return [red_value, green_value, blue_value]
+
+
+def isFingerResetButton(finger_points, button_points):
+    btn_left_x, btn_top_y = button_points[0]
+    btn_right_x, btn_bottom_y = button_points[1]
+
+    finger_x, finger_y = finger_points
+
+    return finger_x >= btn_left_x and finger_y >= btn_top_y and finger_x <= btn_right_x and finger_y <= btn_bottom_y

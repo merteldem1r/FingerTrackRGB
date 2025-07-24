@@ -96,3 +96,26 @@ def fillBoxesWithFingerRGB(frame, rgb_box_points, finger_box_coordinates, rgb_va
     if blue_finger_pts[0] > 0 and blue_finger_pts[1] > 0:
         cv2.rectangle(frame, (blue_box_pts[0][0], blue_finger_pts[1]),
                       (blue_box_pts[1][0], blue_box_pts[1][1]), [rgb_values[2], 0, 0], thickness=cv2.FILLED)
+
+
+def drawResetButtonRGB(frame, is_triggered):
+    box_color = [255, 255, 255] if is_triggered else [0, 0, 0]
+    text_color = [0, 0, 0] if is_triggered else [255, 255, 255]
+    text_done = "Done" if is_triggered else "RGB"
+
+    left_x = config.RESERT_BUTTON_START_POINTS[0]
+    top_y = config.RESERT_BUTTON_START_POINTS[1]
+    right_x = left_x + 125
+    bottom_y = top_y + 125
+
+    cv2.rectangle(frame, (left_x, top_y),
+                  (right_x, bottom_y), box_color, cv2.FILLED)
+    cv2.putText(frame, "Reset", (left_x + 20, top_y + 50),
+                cv2.FONT_HERSHEY_SIMPLEX, 1, text_color, thickness=2)
+    cv2.putText(frame, text_done, (left_x + 20, top_y + 100),
+                cv2.FONT_HERSHEY_SIMPLEX, 1, text_color, thickness=2)
+
+    return [
+        (left_x, top_y),
+        (right_x, bottom_y)
+    ]
