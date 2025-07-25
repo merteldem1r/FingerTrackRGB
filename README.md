@@ -2,7 +2,9 @@
 
 **FingerTrackRGB** is an **Embedded Vision** project which enables **real-time control of RGB LED colors and brightness using hand gesture recognition**. It combines Computer Vision (OpenCV + MediaPipe) to detect index finger positions and STM32 microcontroller for hardware control, featuring a **16x2 I2C LCD**, **Red-Green-Blue LEDs**, and a **buzzer**. RGB values are updated via **UART communication** (in interrupt mode), and the system supports gesture-based **reset RGB values** with visual and audio feedback.
 
-**IMPORTANT NOTE**: If you only want to test **Computer Vision part** please make the all `ser` keywords in the `main.py` file as comment lines. 
+**IMPORTANT NOTE**: 
+  - If you want to test only the **Computer Vision** part of the project, please make the all `ser` keywords in the `main.py` file as comment lines. 
+  - I recommend to use **Python 3.10 and Pip 3.10** because I had MediaPipe compatibility issues on other newer versions.
 
 ## App Preview
 
@@ -56,19 +58,12 @@ The system allows the user to control **RGB values** through visual interaction,
 
 ### Computer Vision (Python)
 
-* Python 3.10
-* pip 3.10
+* Python 3.10 & pip 3.10
+* cv2
+* mediapipe
+* pyserial
 
-Install required Python libraries:
-
-```bash
-pip3.10 install opencv-python mediapipe numpy pyserial
-```
-
-### Embedded Development
-
-* STM32CubeIDE
-* STM32 HAL libraries
+### Embedded Part
 
 Peripheral Configuration:
 
@@ -95,7 +90,7 @@ Peripheral Configuration:
    * Updates the LCD with RGB and HEX
    * Activates buzzer on reset
 
-## UART Communication Protocol
+## UART Communication Protocol between Computer-Vision and STM32
 
 * **RGB Set Command**: `S R G B\n`
 
@@ -146,10 +141,4 @@ Ensure the correct serial port is configured in `config.py` if you test it with 
 │   ├── STM32-RGB.ioc
 │   ├── STM32F407VGTX_FLASH._
 ```
-
-## Notes
-
-* Python 3.10 is recommended due to MediaPipe compatibility issues on other versions
-* Ring buffer usage on STM32 ensures stability under high-frequency UART messages
-* Ensure proper grounding between STM32 board and USB-TTL adapter
 
