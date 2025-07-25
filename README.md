@@ -1,6 +1,8 @@
 # FingerTrackRGB - Computer Vision + Embedded STM32
 
-**FingerTrackRGB** is the project where we can control **LED**'s and their brightness via **Computer Vision** functions and Embedded using STM32 with LCD screetn Red, Green, Blue leds and buzzer to make reset sound.
+**FingerTrackRGB** is an **Embedded Vision** project which enables **real-time control of RGB LED colors and brightness using hand gesture recognition**. It combines Computer Vision (OpenCV + MediaPipe) to detect index finger positions and STM32 microcontroller for hardware control, featuring a **16x2 I2C LCD**, **Red-Green-Blue LEDs**, and a **buzzer**. RGB values are updated via **UART communication** (in interrupt mode), and the system supports gesture-based **reset RGB values** with visual and audio feedback.
+
+**IMPORTANT NOTE**: If you only want to test **Computer Vision part** please make the all `ser` keywords in the `main.py` file as comment lines. 
 
 ## App Preview
 
@@ -102,13 +104,14 @@ Peripheral Configuration:
 
 ## How to Run
 
-### Python Side
+1. Create .venv and install all packages on `requirements.txt`
 
+2. Run main file
 ```bash
 python3.10 main.py
 ```
 
-Ensure the correct serial port is configured in `config.py`.
+Ensure the correct serial port is configured in `config.py` if you test it with STM32 and all other components.
 
 ## Project Structure
 
