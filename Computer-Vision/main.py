@@ -6,6 +6,10 @@ import utils.frame_util as FrameUtil
 import sys
 import cv2
 
+"""
+Author: MERT ELDEMIR
+GitHub: https://github.com/merteldem1r
+"""
 
 # Serial (UART) communication
 ser = SerialComm()

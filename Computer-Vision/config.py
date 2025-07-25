@@ -1,5 +1,10 @@
 import os
 
+"""
+Author: MERT ELDEMIR
+GitHub: https://github.com/merteldem1r
+"""
+
 SERIAL_PORT = "/dev/tty.usbserial-B0044FJ3"
 BAUD_RATE = 115200
 
