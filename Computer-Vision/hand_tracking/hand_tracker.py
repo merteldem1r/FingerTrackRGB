@@ -11,6 +11,12 @@ from mediapipe.tasks.python.vision.hand_landmarker import (
 )
 from mediapipe.framework.formats import landmark_pb2
 
+"""
+Author: MERT ELDEMIR
+I have created own class, based on functions of the library that shown in link below
+Google Mediapipe Link: https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker/python
+"""
+
 MARGIN = 10  # pixels
 FONT_SIZE = 1
 FONT_THICKNESS = 1
