@@ -2,15 +2,6 @@
 
 **FingerTrackRGB** is the project where we can control **LED**'s and their brightness via **Computer Vision** functions and Embedded using STM32 with LCD screetn Red, Green, Blue leds and buzzer to make reset sound.
 
-## Overview
-
-This project combines real-time hand tracking with embedded hardware to control an RGB LED via hand gestures. It includes two major parts:
-
-* **Computer Vision Module**: Built using **Python, OpenCV, and Google's MediaPipe Hand Landmarker**
-* **STM32 Embedded Module**: Developed using STM32CubeIDE with **UART interrupt**, **PWM for RGB LEDs**, **I2C-driven LCD**, and **buzzer control**
-
-The system allows the user to control **RGB values** through visual interaction, transmit the values over **UART**, and reflect the **updates on hardware in real time.**
-
 ## App Preview
 
 <img width="1710" height="909" alt="image" src="https://github.com/user-attachments/assets/52c399b3-44ef-460a-944e-05c2e5e837ef" />
@@ -20,6 +11,15 @@ The system allows the user to control **RGB values** through visual interaction,
 <img width="1710" height="910" alt="image" src="https://github.com/user-attachments/assets/43c49444-3862-4bf1-91d6-23eb93caef2d" />
 
 <img width="1710" height="908" alt="image" src="https://github.com/user-attachments/assets/79a76447-5465-47b3-af9b-1562eb3060fb" />
+
+## Overview
+
+This project combines real-time hand tracking with embedded hardware to control an RGB LED via hand gestures. It includes two major parts:
+
+* **Computer Vision Module**: Built using **Python, OpenCV, and Google's MediaPipe Hand Landmarker**
+* **STM32 Embedded Module**: Developed using STM32CubeIDE with **UART interrupt**, **PWM for RGB LEDs**, **I2C-driven LCD**, and **buzzer control**
+
+The system allows the user to control **RGB values** through visual interaction, transmit the values over **UART**, and reflect the **updates on hardware in real time.**
 
 ## Features
 
