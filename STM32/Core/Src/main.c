@@ -46,8 +46,6 @@
 /* Private variables ---------------------------------------------------------*/
 I2C_HandleTypeDef hi2c1;
 
-I2S_HandleTypeDef hi2s3;
-
 TIM_HandleTypeDef htim2;
 
 UART_HandleTypeDef huart2;
@@ -61,7 +59,6 @@ UART_HandleTypeDef huart3;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_I2C1_Init(void);
-static void MX_I2S3_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_USART2_UART_Init(void);
@@ -73,14 +70,24 @@ void MX_USB_HOST_Process(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-uint8_t rxByte;
-uint8_t rxBuffer[16];
-uint8_t rxIndex = 0;
+#define MAX_MSG_LEN 16
+#define MSG_QUEUE_LEN 8
 
+char msgQueue[MSG_QUEUE_LEN][MAX_MSG_LEN];
+volatile uint8_t msgHead = 0;
+volatile uint8_t msgTail = 0;
+
+uint8_t rxByte;
+static char tempMsg[MAX_MSG_LEN];
+static uint8_t tempIndex = 0;
+
+char *rgbStr = "";
 uint8_t isReset = 0;
 
+uint32_t lastBuzzerdSoundTime = 0;
+
 void setLedPWM(uint8_t r, uint8_t g, uint8_t b) {
-	if (r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255) {
+	if (r <= 255 && g <= 255 && b <= 255) {
 		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, r);
 		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, g);
 		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, b);
@@ -91,71 +98,40 @@ void resetLedPWM() {
 	__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 0);
 	__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 0);
 	__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, 0);
-
-	setDefaultTextLCD();
-}
-
-void setDefaultTextLCD() {
 	lcd_clear();
 	lcd_put_cur(0, 0);
-	lcd_send_string("RGB: 255 255 255");
+	lcd_send_string("RGB: 0 0 0");
 	lcd_put_cur(1, 0);
+	lcd_send_string("HEX: #000000");
 }
 
-void setRgbTextLCD(char* rgbMsg, uint8_t r, uint8_t g, uint8_t b) {
-	char msgBuffer[16];
-	sprintf(msgBuffer, "RGB: %s", rgbMsg);
-
+void setRgbTextLCD(char *rgbMsg, uint8_t r, uint8_t g, uint8_t b) {
+	char rgbStr[17];
 	lcd_clear();
 	lcd_put_cur(0, 0);
-	lcd_send_string(rgbMsg);
+	snprintf(rgbStr, sizeof(rgbStr), "RGB: %u %u %u", r, g, b);
+	lcd_send_string(rgbStr);
 
 	char hexRgbStr[16];
 	lcd_put_cur(1, 0);
-	snprintf(hexRgbStr, sizeof(hexRgbStr), "%02X %02X %02X", r, g, b);
+	snprintf(hexRgbStr, sizeof(hexRgbStr), "HEX: #%02X%02X%02X", r, g, b);
 	lcd_send_string(hexRgbStr);
 }
-
-void resetBeep() {
-	isReset = 1;
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_SET);
-}
-
 
 // Serial messages & responses
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	if (huart->Instance == USART2) {
-		if (rxByte != '\n' && rxIndex < 16 - 1) {
-			rxBuffer[rxIndex++] = rxByte;
+		if (rxByte != '\n' && tempIndex < MAX_MSG_LEN - 1) {
+			tempMsg[tempIndex++] = rxByte;
 		} else {
-			// Null-terminate the message
-			rxBuffer[rxIndex] = '\0';
-			rxIndex = 0;
-
-			char code = rxBuffer[0];
-
-			if (code == 'S') {
-				unsigned int r_i, g_i, b_i;
-
-				char *msgRgb  = (char*) &rxBuffer[2];
-
-				if (sscanf(msgRgb, "%u %u %u", &r_i, &g_i, &b_i) == 3) {
-					uint8_t r = (uint8_t) r_i;
-					uint8_t g = (uint8_t) g_i;
-					uint8_t b = (uint8_t) b_i;
-					setLedPWM(r, g, b);
-					setRgbTextLCD(msgRgb);
-				}
-
-			} else if (code == 'R') {
-				resetLedPWM();
-				resetBeep();
+			tempMsg[tempIndex] = '\0';
+			tempIndex = 0;
+			uint8_t nextHead = (msgHead + 1) % MSG_QUEUE_LEN;
+			if (nextHead != msgTail) {
+				strcpy(msgQueue[msgHead], tempMsg);
+				msgHead = nextHead;
 			}
-
-			memset(rxBuffer, 0, 16);
 		}
-
-		// interrupt for next byte
 		HAL_UART_Receive_IT(&huart2, &rxByte, 1);
 	}
 }
@@ -191,7 +167,6 @@ int main(void) {
 	/* Initialize all configured peripherals */
 	MX_GPIO_Init();
 	MX_I2C1_Init();
-	MX_I2S3_Init();
 	MX_USB_HOST_Init();
 	MX_TIM2_Init();
 	MX_USART3_UART_Init();
@@ -201,28 +176,56 @@ int main(void) {
 	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
 	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
 
-	HAL_UART_Receive_IT(&huart2, rxBuffer, 1);
-
+	HAL_UART_Receive_IT(&huart2, &rxByte, 1);
 	lcd_init();
-
-	setDefaultTextLCD();
+	lcd_clear();
+	lcd_put_cur(0, 0);
+	lcd_send_string("RGB: 0 0 0");
+	lcd_put_cur(1, 0);
+	lcd_send_string("HEX: #000000");
 
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
+
 	while (1) {
 
 		/* USER CODE END WHILE */
 		MX_USB_HOST_Process();
 
-		if (isReset == 1) {
-			HAL_Delay(150);
-			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_RESET);
-			isReset = 0;
-		}
-
 		/* USER CODE BEGIN 3 */
+
+		if (msgHead != msgTail) {
+			char *msg = msgQueue[msgTail];
+			msgTail = (msgTail + 1) % MSG_QUEUE_LEN;
+
+			if (msg[0] == 'S') {
+				unsigned int r_i, g_i, b_i;
+				if (sscanf(&msg[2], "%u %u %u", &r_i, &g_i, &b_i) == 3) {
+					uint8_t r = (uint8_t) r_i;
+					uint8_t g = (uint8_t) g_i;
+					uint8_t b = (uint8_t) b_i;
+					setLedPWM(r, g, b);
+					setRgbTextLCD(&msg[2], r_i, g_i, b_i);
+				}
+			} else if (msg[0] == 'R') {
+				resetLedPWM();
+
+				if ((HAL_GetTick() - lastBuzzerdSoundTime) > 500) {
+					lastBuzzerdSoundTime = HAL_GetTick();
+					HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_SET);
+					HAL_Delay(100);
+					HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_RESET);
+				}
+			} else {
+				lcd_clear();
+				lcd_put_cur(0, 0);
+				lcd_send_string("Invalid");
+				lcd_put_cur(1, 0);
+				lcd_send_string("command");
+			}
+		}
 	}
 	/* USER CODE END 3 */
 }
@@ -247,8 +250,8 @@ void SystemClock_Config(void) {
 	RCC_OscInitStruct.HSEState = RCC_HSE_ON;
 	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
 	RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-	RCC_OscInitStruct.PLL.PLLM = 8;
-	RCC_OscInitStruct.PLL.PLLN = 336;
+	RCC_OscInitStruct.PLL.PLLM = 4;
+	RCC_OscInitStruct.PLL.PLLN = 168;
 	RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
 	RCC_OscInitStruct.PLL.PLLQ = 7;
 	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
@@ -298,38 +301,6 @@ static void MX_I2C1_Init(void) {
 	/* USER CODE BEGIN I2C1_Init 2 */
 
 	/* USER CODE END I2C1_Init 2 */
-
-}
-
-/**
- * @brief I2S3 Initialization Function
- * @param None
- * @retval None
- */
-static void MX_I2S3_Init(void) {
-
-	/* USER CODE BEGIN I2S3_Init 0 */
-
-	/* USER CODE END I2S3_Init 0 */
-
-	/* USER CODE BEGIN I2S3_Init 1 */
-
-	/* USER CODE END I2S3_Init 1 */
-	hi2s3.Instance = SPI3;
-	hi2s3.Init.Mode = I2S_MODE_MASTER_TX;
-	hi2s3.Init.Standard = I2S_STANDARD_PHILIPS;
-	hi2s3.Init.DataFormat = I2S_DATAFORMAT_16B;
-	hi2s3.Init.MCLKOutput = I2S_MCLKOUTPUT_ENABLE;
-	hi2s3.Init.AudioFreq = I2S_AUDIOFREQ_96K;
-	hi2s3.Init.CPOL = I2S_CPOL_LOW;
-	hi2s3.Init.ClockSource = I2S_CLOCK_PLL;
-	hi2s3.Init.FullDuplexMode = I2S_FULLDUPLEXMODE_DISABLE;
-	if (HAL_I2S_Init(&hi2s3) != HAL_OK) {
-		Error_Handler();
-	}
-	/* USER CODE BEGIN I2S3_Init 2 */
-
-	/* USER CODE END I2S3_Init 2 */
 
 }
 
@@ -477,6 +448,9 @@ static void MX_GPIO_Init(void) {
 			GPIO_PIN_SET);
 
 	/*Configure GPIO pin Output Level */
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_RESET);
+
+	/*Configure GPIO pin Output Level */
 	HAL_GPIO_WritePin(GPIOD,
 	LD4_Pin | LD3_Pin | LD5_Pin | LD6_Pin | Audio_RST_Pin, GPIO_PIN_RESET);
 
@@ -502,6 +476,14 @@ static void MX_GPIO_Init(void) {
 	GPIO_InitStruct.Alternate = GPIO_AF5_SPI2;
 	HAL_GPIO_Init(PDM_OUT_GPIO_Port, &GPIO_InitStruct);
 
+	/*Configure GPIO pin : I2S3_WS_Pin */
+	GPIO_InitStruct.Pin = I2S3_WS_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	GPIO_InitStruct.Alternate = GPIO_AF6_SPI3;
+	HAL_GPIO_Init(I2S3_WS_GPIO_Port, &GPIO_InitStruct);
+
 	/*Configure GPIO pins : SPI1_MISO_Pin SPI1_MOSI_Pin */
 	GPIO_InitStruct.Pin = SPI1_MISO_Pin | SPI1_MOSI_Pin;
 	GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
@@ -516,6 +498,13 @@ static void MX_GPIO_Init(void) {
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init(BOOT1_GPIO_Port, &GPIO_InitStruct);
 
+	/*Configure GPIO pin : PB15 */
+	GPIO_InitStruct.Pin = GPIO_PIN_15;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
 	/*Configure GPIO pins : LD4_Pin LD3_Pin LD5_Pin LD6_Pin
 	 Audio_RST_Pin */
 	GPIO_InitStruct.Pin = LD4_Pin | LD3_Pin | LD5_Pin | LD6_Pin | Audio_RST_Pin;
@@ -523,6 +512,14 @@ static void MX_GPIO_Init(void) {
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 	HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+
+	/*Configure GPIO pins : I2S3_MCK_Pin I2S3_SCK_Pin I2S3_SD_Pin */
+	GPIO_InitStruct.Pin = I2S3_MCK_Pin | I2S3_SCK_Pin | I2S3_SD_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	GPIO_InitStruct.Alternate = GPIO_AF6_SPI3;
+	HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
 	/*Configure GPIO pin : OTG_FS_OverCurrent_Pin */
 	GPIO_InitStruct.Pin = OTG_FS_OverCurrent_Pin;

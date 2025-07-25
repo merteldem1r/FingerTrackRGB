@@ -18,7 +18,7 @@ class SerialComm():
             self.ser.write(msg)
 
     def reset_rgb(self):
-        msg_str = "R\n"
+        msg_str = "R \n"
         msg = msg_str.encode('utf-8')
         self.ser.write(msg)
 

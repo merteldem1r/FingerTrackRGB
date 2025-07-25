@@ -8,8 +8,8 @@ import cv2
 
 
 # Serial (UART) communication
-# ser = SerialComm()
-# print("Serial PORT:", ser.getSerialPort())
+ser = SerialComm()
+print("Serial PORT:", ser.getSerialPort())
 
 # Video settings
 source = cv2.VideoCapture(0)
@@ -22,7 +22,7 @@ print(f"Camera resolution: {actual_width} x {actual_height}")
 
 if not source.isOpened():
     print("Error: While openning camera")
-    sys.exit()
+    sys.exit(1)
 
 win_name = "hand_detection"
 cv2.namedWindow(win_name)
@@ -87,6 +87,11 @@ while True:
             RGB_Values = CoordinatesUtil.getValueRGB(
                 last_box_finger_points, rgb_box_points)
 
+            print("Last Box Finger Points: ", last_box_finger_points)
+            print("RGB Values: ", RGB_Values)
+
+            ser.set_rgb(RGB_Values)
+
         # for RGB reset button
         FrameUtil.fillBoxesWithFingerRGB(
             frame, rgb_box_points, last_box_finger_points, RGB_Values)
@@ -98,6 +103,8 @@ while True:
                 (0, 0),  # in GREEN box
                 (0, 0),  # in BLUE
             ]
+            ser.reset_rgb()
+            print("Reset RGB triggered")
             reset_points = FrameUtil.drawResetButtonRGB(
                 frame, is_triggered=True)
 
@@ -133,7 +140,7 @@ while True:
     cv2.imshow(win_name, frame)
 
 
-# ser.close()
+ser.close()
 hand_tracker.destroy()
 source.release()
 cv2.destroyAllWindows()
